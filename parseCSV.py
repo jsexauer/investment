@@ -320,9 +320,9 @@ def insertTransaction(db, date, action, symbol, qty, price, fees, sourceLine, ac
 if __name__ == '__main__':
     import sqlite3
     db = sqlite3.connect("transactions.db")
-    parseFidelity("fidelity.csv",db)
-    parseSchwab("schwabMod.csv",db)
-    parseVanguard("vanguard.csv", db)
+    parseFidelity("sensitive_data/fidelity.csv",db)
+    parseSchwab("sensitive_data/schwabMod.csv",db)
+    parseVanguard("sensitive_data/vanguard.csv", db)
     
     
     

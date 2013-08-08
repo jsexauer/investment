@@ -1,3 +1,14 @@
+################
+## Custom
+################
+
+# My transactions database
+transactions.db
+
+# Files I put into "sensitive_data" so that it does not get pushed to the web
+sensitive_data/
+
+
 #################
 ## Eclipse
 #################
