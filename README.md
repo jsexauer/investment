@@ -1,4 +1,0 @@
-investment
-==========
-
-Investment Testings
