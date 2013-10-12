@@ -304,6 +304,7 @@ def main(symbols, sDate, eDate, maxDaysHeld, numSim=5000, daySpacing=10,
     sh['low_25'] = low_25
     sh['high_25'] = high_25
     sh['wastedTime'] = wastedTime
+    sh['portfolio'] = symbols
     sh.close()
     
     return high_25, means, medians, low_25

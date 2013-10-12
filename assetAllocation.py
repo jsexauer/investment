@@ -11,14 +11,28 @@ ALLOCATION_STRATEGY = dict(
         midCapG     = .3,
         smallCapG   = .3,
         interBonds  = .1
-        ),
+    ),
     conservative = dict(
         largeCapV   = .3,
         midCapV     = .1,
         smallCapV   = .1,
         interBonds  = .4,
         muniBonds   = .1
-        ),
+    ),
+    PABonds = dict(
+        muniBonds = 1
+    ),
+    homeFund = dict(
+        largeCapG   = .35,
+        midCapV     = .2,
+        muniBonds  = .15,
+        interBonds  = .3,
+    ),
+    homeFund2 = dict(
+        largeCapG   = .35,
+        midCapV     = .2,
+        interBonds  = .45,
+    ),
 )
 
 # From https://client.schwab.com/secure/cc/research/mutual_funds/mfs.html?path=/RESEARCH/CLIENT/MutualFunds/Screener/FindFunds
@@ -40,9 +54,9 @@ FUNDS = dict(
                    'SWDSX','EQTIX','TRVLX'],
     midCapV     = ['NSEIX','TCMVX','VETAX'],
     smallCapV   = ['JASCX','NOSGX','QRSVX','SKSEX'],
-    interBonds  = ['AGD1Z','BTTTX','BCOSX','BHYSZ','CFBNX','DODIX','FIIFX',
-                   'JAFIX','JAHYX','LSBRX','MFDAX','MGFIX','MWTRX','MFB1Z',
-                   'PFODX','PRRDX','PTTDX','PIOBX','CPHYX','CMP1Z','STHTX',
+    interBonds  = ['BTTTX','BCOSX','CFBNX','DODIX','FIIFX',
+                   'JAFIX','JAHYX','LSBRX','MFDAX','MGFIX','MWTRX',
+                   'PFODX','PRRDX','PTTDX','PIOBX','CPHYX','STHTX',
                    'SAMFX','TGFNX','TGMNX','THOPX','WTIBX'],
     # PA municipal bonds
     muniBonds  = ['APAAX','PTPAX','FPXTX','FRPAX','MFPAX','FPNTX','PTEPX'],
@@ -55,25 +69,61 @@ def createPortfolio(strategy):
         portfolio.append((choice(FUNDS[category]), pct))
     return portfolio
 
-numTests = 5
-for n in xrange(numTests):
-    # Test different versions of the same portfolio
-    strategy = 'aggresive'
+def checkAllocationStrats():
+    flag = False
+    for name, allocation in ALLOCATION_STRATEGY.iteritems():
+        for cat, pct in allocation.iteritems():
+            if cat not in FUNDS.keys():
+                print "Category '%s' of allocation %s bad." % (cat, name)
+                flag = True
+    return not flag
+                
+    
+
+if __name__ == '__main__':
+    from numpy import linspace
     sDate = (2003,1,1)
     eDate = (2013,10,10)   
     maxDaysHeld = 365*7
+    numTests = 30
     
-    portfolio = createPortfolio(ALLOCATION_STRATEGY[strategy])
+    # Make sure our allocations are well formed
+    if not checkAllocationStrats():
+        raise Exception('Allocations are malformed.')
     
-    print "Test portfilo %d: %s" % (n, portfolio)
-    testPortfilo(portfolio,sDate,eDate,maxDaysHeld,
-                 outputFilename='test_%d.dat' % n,
-                 silent=True)
-
-# Plot the results
-colors = 'bgrcmykw'
-for n in xrange(numTests):
-    with shelve.open('test_%d.dat' % n) as f:
-        pltAgainst(f, 'Portfolio %d'%n, colors[n])
-plt.legend()
-plt.show()
+    # Colors for plotting
+    colors = plt.cm.rainbow(linspace(0, 1, numTests))
+    
+    # Test each investment strategy
+    for strategy in ALLOCATION_STRATEGY.keys():
+        print '\n===%s===' % strategy
+        for n in xrange(numTests):
+            # Test different versions of the same portfolio        
+            portfolio = createPortfolio(ALLOCATION_STRATEGY[strategy])
+            
+            print "Test portfilo %d: %s" % (n, portfolio)
+            testPortfilo(portfolio,sDate,eDate,maxDaysHeld,
+                         outputFilename=r'data\%s_%d.dat' % (strategy, n),
+                         silent=True)
+        
+        # Plot the results
+        plt.figure()
+        for n in xrange(numTests):
+            f = shelve.open(r'data\%s_%d.dat' % (strategy, n))
+            pltAgainst(f, 'Portfolio %d'%n, colors[n])
+            f.close()
+        plt.legend()
+        plt.title('Strategy: %s' % strategy)
+        plt.show()
+    
+    # Plot all of them together
+    plt.figure()
+    colors = plt.cm.rainbow(linspace(0, 1, len(ALLOCATION_STRATEGY.keys()) ))
+    for nstrat, strategy in enumerate(ALLOCATION_STRATEGY.keys()):
+        for n in xrange(numTests):
+            f = shelve.open(r'data\%s_%d.dat' % (strategy, n))
+            pltAgainst(f, '%s #%d'% (strategy, n), colors[nstrat])
+            f.close()
+    plt.legend()
+    plt.title('All Strategies')
+    plt.show()
