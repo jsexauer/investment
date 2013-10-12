@@ -6,6 +6,8 @@ inflate = calcInflation()
 getInfl = inflate.calcInflation
 #getInfl = lambda x, trash1, trash2: x   # Neglect inflation
 
+ENTRY_STRATEGY = 'random'   # Possibilites: random, delayed
+
 class Worker(multiprocessing.Process):
     
     def __init__(self, task_queue, result_queue):
@@ -51,7 +53,13 @@ class Task(object):
         numSim = self.nsim
         
         for n in range(numSim):
-            gains.append(self.runDelayedEntryStrat())        
+            if ENTRY_STRATEGY == 'random':
+                gains.append(self.runRandomEntryStrat())  
+            elif ENTRY_STRATEGY == 'delayed':
+                gains.append(self.runDelayedEntryStrat())
+            else:
+                raise NotImplemented(
+                    'Market entry strategy "%s" not implemented' % ENTRY_STRATEGY)
         # Average wasted time
         self.wastedTime = float(self.wastedTime) / numSim
         
@@ -163,11 +171,22 @@ if __name__ == '__main__':
     
     _startTime = pandas.datetime.now()
     
-    symbol = '^GSPC' # 10-year T bill: '^TNX', S&P500: '^GSPC'
-    sDate = (1950,1,1)
-    eDate = (2013,12,31)
+    # Various Investment Protfolios
+    portfolios = {
+        'Bonds':    [('BERIX',0.33),    # Vanguard PA muni bonds
+                     ('PDINX',0.33),    # Vanguard Short-Term 
+                     ('PINCX',0.34),]   # Vanguard Inflaction-Protected bonds
+                     ,
+        'Market':   [('^GSPC', 1.0)]
+
+    }
     
-    maxDaysHeld = 10000
+    # 10-year T bill: '^TNX', S&P500: '^GSPC'
+    symbols = portfolios['Bonds']
+    sDate = (1990,1,1)
+    eDate = (2013,10,10)
+    
+    maxDaysHeld = 365*7
     numSim =  5000 # 5000 is best for convergence
     daySpacing = 10
     startDays = 10
@@ -175,7 +194,7 @@ if __name__ == '__main__':
     
     plt.close('all')
     
-    df = grabSymbol(symbol, sDate, eDate)
+    
     
     if 'X' in vars().keys():
         del X
@@ -200,6 +219,19 @@ if __name__ == '__main__':
     
     # Enqueue jobs
     num_jobs = 0
+
+    if type(symbols) is str:
+        # Pull only a single stock
+        df = grabSymbol(symbols, sDate, eDate)
+    else:
+        # Pull portfollio with tuples in form of ('symbol', pctAllocation)
+        if sum([a[1] for a in symbols]) != 1:
+            raise RuntimeError('Sum of allocations must be 1.0')
+        df = pandas.DataFrame()
+        for symbol, pctAlloc in symbols:
+            df = df.add(grabSymbol(symbol, sDate, eDate)*pctAlloc, 
+                        fill_value=0)
+            
     
     for daysHeld in range(startDays,maxDaysHeld,daySpacing):
         tasks.put(Task(daysHeld, numSim, df, cumulative))
