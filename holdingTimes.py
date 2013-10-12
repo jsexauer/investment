@@ -2,11 +2,19 @@ import multiprocessing
 from investmentLib import calcInflation, grabSymbol
 import numpy as np
 import pandas
+import sys
 inflate = calcInflation()
 getInfl = inflate.calcInflation
 #getInfl = lambda x, trash1, trash2: x   # Neglect inflation
 
 ENTRY_STRATEGY = 'random'   # Possibilites: random, delayed
+
+class ErrorHolder(object):
+    def __init__(self, task, exception):
+        self.task = task
+        self.exception = exception
+    def __str__(self):
+        return "Error running child prcoess: \n" + self.exception
 
 class Worker(multiprocessing.Process):
     
@@ -24,7 +32,16 @@ class Worker(multiprocessing.Process):
                 #print '%s: Exiting' % proc_name
                 break
             #print '%s: %s' % (proc_name, next_task)
-            answer = next_task()
+            try:
+                answer = next_task()
+            except:
+                from traceback import print_exception
+                from StringIO import StringIO
+                # The main task didn't execute.  Report an error
+                s = StringIO()
+                print_exception(sys.exc_info()[0], sys.exc_info()[1], 
+                                sys.exc_info()[2], None, s)
+                answer = ErrorHolder(next_task, s.getvalue())
             self.result_queue.put(answer)
         return
 
@@ -219,7 +236,12 @@ def main(symbols, sDate, eDate, maxDaysHeld, numSim=5000, daySpacing=10,
     wastedTime = np.zeros(num_jobs)
     
     while num_jobs:
-        (mn, mds, Xn, Yn, Cn, dH, l_25, h_25, w) = results.get()
+        ans = results.get()
+        if isinstance(ans,ErrorHolder):
+            # We got an error, print it
+            print ans
+        else:
+            (mn, mds, Xn, Yn, Cn, dH, l_25, h_25, w) = ans
         ix = (dH-startDays)/daySpacing
         means[ix] = mn
         medians[ix] = mds
