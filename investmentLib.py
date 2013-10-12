@@ -7,7 +7,7 @@ Created on Sun Oct 16 18:37:23 2011
 
 
 from urllib import urlretrieve
-from urllib2 import urlopen
+from urllib2 import urlopen, HTTPError
 from pandas import Index, DataFrame
 from datetime import datetime
 import matplotlib.pyplot as plt
@@ -17,8 +17,11 @@ import shelve
 def grabSymbol(symbol, sDate, eDate):
     urlStr = 'http://ichart.finance.yahoo.com/table.csv?s={0}&a={1}&b={2}&c={3}&d={4}&e={5}&f={6}'.\
     format(symbol.upper(),sDate[1]-1,sDate[2],sDate[0],eDate[1]-1,eDate[2],eDate[0])
-    print 'Downloading from ', urlStr
-    lines = urlopen(urlStr).readlines()
+    #print 'Downloading from ', urlStr
+    try:
+        lines = urlopen(urlStr).readlines()
+    except HTTPError:
+        raise RuntimeError("Yahoo does not have data for symbol'%s'" % symbol)
     
     
     dates = []

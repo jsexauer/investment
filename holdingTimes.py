@@ -1,5 +1,5 @@
 import multiprocessing
-from investmentLib import calcInflation
+from investmentLib import calcInflation, grabSymbol
 import numpy as np
 import pandas
 inflate = calcInflation()
@@ -21,7 +21,7 @@ class Worker(multiprocessing.Process):
             next_task = self.task_queue.get()
             if next_task is None:
                 # Poison pill means we should exit
-                print '%s: Exiting' % proc_name
+                #print '%s: Exiting' % proc_name
                 break
             #print '%s: %s' % (proc_name, next_task)
             answer = next_task()
@@ -164,43 +164,10 @@ def moving_average(a, n=3) :
     ret = a.cumsum()
     return (ret[n - 1:].reset_index() - ret[:1 - n].reset_index()) / n
     
-if __name__ == '__main__':
-    # My Stuff
-    import matplotlib.pylab as plt
-    from investmentLib import grabSymbol
-    
-    _startTime = pandas.datetime.now()
-    
-    # Various Investment Protfolios
-    portfolios = {
-        'Bonds':    [('BERIX',0.33),    # Vanguard PA muni bonds
-                     ('PDINX',0.33),    # Vanguard Short-Term 
-                     ('PINCX',0.34),]   # Vanguard Inflaction-Protected bonds
-                     ,
-        'Market':   [('^GSPC', 1.0)]
 
-    }
-    
-    # 10-year T bill: '^TNX', S&P500: '^GSPC'
-    symbols = portfolios['Bonds']
-    sDate = (1990,1,1)
-    eDate = (2013,10,10)
-    
-    maxDaysHeld = 365*7
-    numSim =  5000 # 5000 is best for convergence
-    daySpacing = 10
-    startDays = 10
-    cumulative = True
-    
-    plt.close('all')
-    
-    
-    
-    if 'X' in vars().keys():
-        del X
-
-
-
+def main(symbols, sDate, eDate, maxDaysHeld, numSim=5000, daySpacing=10, 
+         startDays=10, cumulative=True, outputFilename='simulation.dat',
+         silent=False):
     ###########
     # Multiprocessing Stuff
     #raise KeyError
@@ -211,7 +178,8 @@ if __name__ == '__main__':
     
     # Start Workers
     num_workers = multiprocessing.cpu_count() * 1
-    print 'Creating %d workers' % num_workers
+    if not silent:
+        print 'Creating %d workers' % num_workers
     consumers = [ Worker(tasks, results)
                   for i in xrange(num_workers) ]
     for w in consumers:
@@ -225,7 +193,7 @@ if __name__ == '__main__':
         df = grabSymbol(symbols, sDate, eDate)
     else:
         # Pull portfollio with tuples in form of ('symbol', pctAllocation)
-        if sum([a[1] for a in symbols]) != 1:
+        if abs(sum([a[1] for a in symbols]) - 1)  > 0.01:
             raise RuntimeError('Sum of allocations must be 1.0')
         df = pandas.DataFrame()
         for symbol, pctAlloc in symbols:
@@ -270,38 +238,42 @@ if __name__ == '__main__':
             
         num_jobs -= 1
         jobsTime = jobsTime.append(pandas.Series(pandas.datetime.now()))
-        print "Jobs left: %s (ETA %0.2f min)"% \
-            (num_jobs, 
-             np.average([(jobsTime.iloc[n] - jobsTime.iloc[n-1]).seconds 
-                         for n in range(1,len(jobsTime))])*num_jobs/60.0 )
+        if not silent:
+            print "Jobs left: %s (ETA %0.2f min)"% \
+                (num_jobs, 
+                 np.average([(jobsTime.iloc[n] - jobsTime.iloc[n-1]).seconds 
+                             for n in range(1,len(jobsTime))])*num_jobs/60.0 )
     
     
     # Plot Results
     # Convert time (X) to years
     X = X.astype('f')/365.25
     
-    plt.pcolor(X, Y, C, cmap=plt.cm.YlOrRd)
-    #means = pandas.rolling_mean(pandas.Series(means), 10)
-    plt.plot(X[:,1], means, color='k', label='Mean')
-    plt.plot(X[:,1], medians, color='b', label='Median')
-    plt.plot(X[:,1], low_25, color='g', label='Low25')
-    plt.plot(X[:,1], high_25, color='g', label='High25')
-    plt.colorbar().set_label('Probability Higher/Lower than Median')    
-    plt.legend(loc='upper left')
-    plt.xlabel('Years')
-    plt.ylabel('Return')
-    plt.grid(axis='y')
-    plt.gca().yaxis.set_major_formatter(plt.FuncFormatter(lambda x, pos: '%0.2f%%' %(x*100)))
-    plt.show()
-       
-    plt.figure()
-    plt.plot(X[:,1], wastedTime)
-    plt.title("Average number of days I lost waiting to invest")
-    plt.show()
+    if not silent:
+        plt.pcolor(X, Y, C, cmap=plt.cm.YlOrRd)
+        #means = pandas.rolling_mean(pandas.Series(means), 10)
+        plt.plot(X[:,1], means, color='k', label='Mean')
+        plt.plot(X[:,1], medians, color='b', label='Median')
+        plt.plot(X[:,1], low_25, color='g', label='Low25')
+        plt.plot(X[:,1], high_25, color='g', label='High25')
+        plt.colorbar().set_label('Probability Higher/Lower than Median')    
+        plt.legend(loc='upper left')
+        plt.xlabel('Years')
+        plt.ylabel('Return')
+        plt.grid(axis='y')
+        plt.gca().yaxis.set_major_formatter(plt.FuncFormatter(lambda x, pos: '%0.2f%%' %(x*100)))
+        plt.show()
+           
+        plt.figure()
+        plt.plot(X[:,1], wastedTime)
+        plt.title("Average number of days I lost waiting to invest")
+        plt.show()
     
-    print "Exporing data to file simulation.dat..."
+    # Save data to dat file for reading my plotMultipleGainsOverTime
+    if not silent:    
+        print "Exporing data to file %s..." % outputFilename
     import shelve
-    sh = shelve.open("simulation.dat")
+    sh = shelve.open(outputFilename)
     sh['X'] = X
     sh['Y'] = Y
     sh['C'] = C
@@ -311,5 +283,35 @@ if __name__ == '__main__':
     sh['high_25'] = high_25
     sh['wastedTime'] = wastedTime
     sh.close()
+    
+    return high_25, means, medians, low_25
+    
+if __name__ == '__main__':
+    # My Stuff
+    import matplotlib.pylab as plt
+    from investmentLib import grabSymbol
+    
+    _startTime = pandas.datetime.now()
+    
+    # Various Investment Protfolios
+    portfolios = {
+        'Bonds':    [('BERIX',0.33),    # Vanguard PA muni bonds
+                     ('PDINX',0.33),    # Vanguard Short-Term 
+                     ('PINCX',0.34),]   # Vanguard Inflaction-Protected bonds
+                     ,
+        'Market':   [('^GSPC', 1.0)]
+
+    }
+    
+    # 10-year T bill: '^TNX', S&P500: '^GSPC'
+    symbols = portfolios['Bonds']
+    sDate = (1990,1,1)
+    eDate = (2013,10,10)   
+    maxDaysHeld = 365*7
+
+    
+    plt.close('all')
+    
+    main(symbols, sDate, eDate, maxDaysHeld)
     
     print "Done.  Execution took ",  (pandas.datetime.now()- _startTime).seconds, " seconds"
