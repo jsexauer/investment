@@ -4,6 +4,7 @@ from plotMultipleGainsOverTime import pltAgainst
 from random import choice
 import shelve
 import matplotlib.pylab as plt
+from numpy import linspace
 
 ALLOCATION_STRATEGY = dict(
     aggresive = dict(
@@ -25,7 +26,7 @@ ALLOCATION_STRATEGY = dict(
     homeFund = dict(
         largeCapG   = .35,
         midCapV     = .2,
-        muniBonds  = .15,
+        muniBonds   = .15,
         interBonds  = .3,
     ),
     homeFund2 = dict(
@@ -77,15 +78,28 @@ def checkAllocationStrats():
                 print "Category '%s' of allocation %s bad." % (cat, name)
                 flag = True
     return not flag
-                
-    
 
-if __name__ == '__main__':
-    from numpy import linspace
+def plotResults(strategiesToPlot, numTests):                    
+    plt.figure()
+    colors = plt.cm.rainbow(linspace(0, 1, len(strategiesToPlot) ))
+    for nstrat, strategy in enumerate(strategiesToPlot):
+        for n in xrange(numTests):
+            if n == 0:
+                title = '%s #%d'% (strategy, n)
+            else:
+                title = None
+            f = shelve.open(r'data\%s_%d.dat' % (strategy, n))
+            pltAgainst(f, title, colors[nstrat])
+            f.close()
+    plt.legend()
+    plt.title('All Strategies')
+    plt.show()
+    
+def testStrategies(numTests):
+    """Main Function"""
     sDate = (2003,1,1)
     eDate = (2013,10,10)   
     maxDaysHeld = 365*7
-    numTests = 30
     
     # Make sure our allocations are well formed
     if not checkAllocationStrats():
@@ -116,14 +130,11 @@ if __name__ == '__main__':
         plt.title('Strategy: %s' % strategy)
         plt.show()
     
+if __name__ == '__main__':
+    numTests = 5
+    # testStrategies(numTests)
+    
     # Plot all of them together
-    plt.figure()
-    colors = plt.cm.rainbow(linspace(0, 1, len(ALLOCATION_STRATEGY.keys()) ))
-    for nstrat, strategy in enumerate(ALLOCATION_STRATEGY.keys()):
-        for n in xrange(numTests):
-            f = shelve.open(r'data\%s_%d.dat' % (strategy, n))
-            pltAgainst(f, '%s #%d'% (strategy, n), colors[nstrat])
-            f.close()
-    plt.legend()
-    plt.title('All Strategies')
-    plt.show()
+    strategiesToPlot = ALLOCATION_STRATEGY.keys()
+    strategiesToPlot = ['aggresive', 'conservative']
+    plotResults(strategiesToPlot, numTests)
