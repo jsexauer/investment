@@ -272,6 +272,7 @@ def main(symbols, sDate, eDate, maxDaysHeld, numSim=5000, daySpacing=10,
     X = X.astype('f')/365.25
     
     if not silent:
+        plt.xkcd()
         plt.pcolor(X, Y, C, cmap=plt.cm.YlOrRd)
         #means = pandas.rolling_mean(pandas.Series(means), 10)
         plt.plot(X[:,1], means, color='k', label='Mean')

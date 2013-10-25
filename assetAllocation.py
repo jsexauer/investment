@@ -79,7 +79,8 @@ def checkAllocationStrats():
                 flag = True
     return not flag
 
-def plotResults(strategiesToPlot, numTests):                    
+def plotResults(strategiesToPlot, numTests): 
+    plt.xkcd()                   
     plt.figure()
     colors = plt.cm.rainbow(linspace(0, 1, len(strategiesToPlot) ))
     for nstrat, strategy in enumerate(strategiesToPlot):
