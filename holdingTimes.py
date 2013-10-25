@@ -143,8 +143,8 @@ class Task(object):
         
         gain = (self.df.adj_close[end] - getInfl(self.df.adj_close[start], start.year, end.year)) / \
                         getInfl(self.df.adj_close[start], start.year, end.year)
-        if gain > 6:
-            print "Windfall: ", start, end, gain
+        #if gain > 6:
+        #    print "Windfall: ", start, end, gain
         return gain
     
     def runDelayedEntryStrat(self):

@@ -34,6 +34,34 @@ ALLOCATION_STRATEGY = dict(
         midCapV     = .2,
         interBonds  = .45,
     ),
+    homeFund3 = dict(
+        largeCapG   = .55,
+        muniBonds   = .15,
+        interBonds  = .3,
+    ),
+    homeFund4 = dict(
+        largeCapG   = .7,
+        interBonds  = .3,
+    ),
+    homeFund5 = dict(
+        largeCapG   = .7,
+        muniBonds   = .3,
+    ),
+    homeFund6 = dict(       # Like 1 (previous best), but all muni bonds
+        largeCapG   = .35,
+        midCapV     = .2,
+        muniBonds   = .45,
+    ),
+    largeCapG = dict(
+        largeCapG   = .33,
+        largeCapG2  = .33,
+        largeCapG3  = .34,
+    ),
+    largeCapV = dict(
+        largeCapV   = .33,
+        largeCapV2  = .33,
+        largeCapV3  = .34,
+    )
 )
 
 # From https://client.schwab.com/secure/cc/research/mutual_funds/mfs.html?path=/RESEARCH/CLIENT/MutualFunds/Screener/FindFunds
@@ -62,6 +90,10 @@ FUNDS = dict(
     # PA municipal bonds
     muniBonds  = ['APAAX','PTPAX','FPXTX','FRPAX','MFPAX','FPNTX','PTEPX'],
 )
+FUNDS['largeCapG2'] = FUNDS['largeCapG']
+FUNDS['largeCapG3'] = FUNDS['largeCapG']
+FUNDS['largeCapV2'] = FUNDS['largeCapV']
+FUNDS['largeCapV3'] = FUNDS['largeCapV']
 
 def createPortfolio(strategy):
     """Create a portfilo with the given strategy"""
@@ -96,7 +128,7 @@ def plotResults(strategiesToPlot, numTests):
     plt.title('All Strategies')
     plt.show()
     
-def testStrategies(numTests):
+def testStrategies(strategies, numTests):
     """Main Function"""
     sDate = (2003,1,1)
     eDate = (2013,10,10)   
@@ -110,11 +142,11 @@ def testStrategies(numTests):
     colors = plt.cm.rainbow(linspace(0, 1, numTests))
     
     # Test each investment strategy
-    for strategy in ALLOCATION_STRATEGY.keys():
+    for strategy in strategies.keys():
         print '\n===%s===' % strategy
         for n in xrange(numTests):
             # Test different versions of the same portfolio        
-            portfolio = createPortfolio(ALLOCATION_STRATEGY[strategy])
+            portfolio = createPortfolio(strategies[strategy])
             
             print "Test portfilo %d: %s" % (n, portfolio)
             testPortfilo(portfolio,sDate,eDate,maxDaysHeld,
@@ -133,9 +165,11 @@ def testStrategies(numTests):
     
 if __name__ == '__main__':
     numTests = 5
-    # testStrategies(numTests)
+    strategies = {k:ALLOCATION_STRATEGY[k] for k in 
+                    ['homeFund','homeFund2','homeFund3','homeFund4']}
+    #testStrategies(strategies, numTests)
     
     # Plot all of them together
     strategiesToPlot = ALLOCATION_STRATEGY.keys()
-    strategiesToPlot = ['aggresive', 'conservative']
+    strategiesToPlot = ['conservative','homeFund','homeFund2']
     plotResults(strategiesToPlot, numTests)
