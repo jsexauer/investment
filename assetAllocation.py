@@ -196,8 +196,10 @@ Thoughts as of Oct 29th
 'homeFund3' looks the best.  'homeFund' is also ok.  Choosing homeFund3 because
 it has fewer number of funds and has PA funds.
 
+Use data\HomeFundInvestmentData_Oct29.zip to recreate results
 
 # homeFun3 has bad data:
+# (LGILX appears to be the bad guy)
 toPlot = range(0,100)
 toPlot.remove(57)
 toPlot.remove(50)
