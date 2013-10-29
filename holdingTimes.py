@@ -3,6 +3,7 @@ from investmentLib import calcInflation, grabSymbol
 import numpy as np
 import pandas
 import sys
+import matplotlib.pylab as plt
 inflate = calcInflation()
 getInfl = inflate.calcInflation
 #getInfl = lambda x, trash1, trash2: x   # Neglect inflation

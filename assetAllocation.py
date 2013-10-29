@@ -111,20 +111,36 @@ def checkAllocationStrats():
                 flag = True
     return not flag
 
-def plotResults(strategiesToPlot, numTests): 
+def plotResults(strategiesToPlot, numTests, which=None): 
     plt.xkcd()                   
     plt.figure()
-    colors = plt.cm.rainbow(linspace(0, 1, len(strategiesToPlot) ))
+    
+    if which is None:
+        # Which tells us to plot a subset of the results
+        which = range(numTests)
+        
+    if len(strategiesToPlot) > 1:
+        colors = plt.cm.rainbow(linspace(0, 1, len(strategiesToPlot) ))
+    else:
+        colors = plt.cm.rainbow(linspace(0, 1, len(which) ))
+        colors = {a:b for (a,b) in zip(which, colors)}
+    
+
     for nstrat, strategy in enumerate(strategiesToPlot):
         for n in xrange(numTests):
-            if n == 0:
+            if n not in which:
+                continue
+            if n == 0 or len(strategiesToPlot)==1:
                 title = '%s #%d'% (strategy, n)
             else:
                 title = None
             f = shelve.open(r'data\%s_%d.dat' % (strategy, n))
-            pltAgainst(f, title, colors[nstrat])
+            if len(strategiesToPlot) > 1:
+                pltAgainst(f, title, colors[nstrat])
+            else:
+                pltAgainst(f, title, colors[n])
             f.close()
-    plt.legend()
+    plt.legend(loc='upper left')
     plt.title('All Strategies')
     plt.show()
     
@@ -159,7 +175,7 @@ def testStrategies(strategies, numTests):
             f = shelve.open(r'data\%s_%d.dat' % (strategy, n))
             pltAgainst(f, 'Portfolio %d'%n, colors[n])
             f.close()
-        plt.legend()
+        plt.legend(loc=2)
         plt.title('Strategy: %s' % strategy)
         plt.show()
     
@@ -171,5 +187,44 @@ if __name__ == '__main__':
     
     # Plot all of them together
     strategiesToPlot = ALLOCATION_STRATEGY.keys()
-    strategiesToPlot = ['conservative','homeFund','homeFund2']
+    strategiesToPlot = ['homeFund','homeFund3']
     plotResults(strategiesToPlot, numTests)
+
+
+"""
+Thoughts as of Oct 29th
+'homeFund3' looks the best.  'homeFund' is also ok.  Choosing homeFund3 because
+it has fewer number of funds and has PA funds.
+
+
+# homeFun3 has bad data:
+toPlot = range(0,100)
+toPlot.remove(57)
+toPlot.remove(50)
+toPlot.remove(38)
+toPlot.remove(32)
+plotResults(['homeFund3'],100, toPlot)
+
+
+# Plot in groups of 10 to find the best
+p = toPlot[::10] + [toPlot[-1],]
+for k in range(len(p)):
+    plt.figure()
+    plotResults(['homeFund3'],100, toPlot[p[k]:p[k+1]])
+
+# Plot best10 (ish)
+best = [7,16,20,33,51,61,73,78,95,97,98]
+plotResults(['homeFund3'],100, best)
+
+bestOfBest = [16,78,95]
+plotResults(['homeFund3'],100, bestOfBest)
+
+# 78 is the best!  Retest to be sure
+f = shelve.open(r'data\%s_%d.dat' % ('homeFund3', 78))
+portfolio = f['portfolio']
+# >>> [('BIAGX', 0.55), ('PTPAX', 0.15), ('BTTTX', 0.3)]
+portfolio = [('BIAGX', 0.55), ('PTPAX', 0.15), ('BTTTX', 0.3)]
+testPortfilo(portfolio,(2003,1,1),(2013,10,10) ,365*7,
+             outputFilename=r'data\best_retest.dat',
+             numSim=50000)
+"""
