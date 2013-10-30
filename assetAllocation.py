@@ -229,4 +229,51 @@ portfolio = [('BIAGX', 0.55), ('PTPAX', 0.15), ('BTTTX', 0.3)]
 testPortfilo(portfolio,(2003,1,1),(2013,10,10) ,365*7,
              outputFilename=r'data\best_retest.dat',
              numSim=50000)
+
+# 16 is the second best
+[('FKDNX', 0.55), ('APAAX', 0.15), ('BTTTX', 0.3)]
+
+# What about this one?
+portfolio = [('FKDNX', 0.55), ('FPXTX', 0.15), ('BTTTX', 0.3)]
+testPortfilo(portfolio,(2003,1,1),(2013,10,10) ,365*7,
+             outputFilename=r'data\homeFund3_100.dat',
+             numSim=50000)
+plotResults(['homeFund3'],101, [16,78,100])
+
+# Requires a 10k invest.  What about this one?
+portfolio = [('FKDNX', 0.55), ('FPNTX', 0.15), ('BTTTX', 0.3)]
+testPortfilo(portfolio,(2003,1,1),(2013,10,10) ,365*7,
+             outputFilename=r'data\homeFund3_101.dat',
+             numSim=50000)
+plotResults(['homeFund3'],102, [16,78,101])
+
+PRELIMINARY ANSWER (#101):
+[('FKDNX', 0.55), ('FPNTX', 0.15), ('BTTTX', 0.3)]
+
+
+BTTTX --> ***
+FPNTX --> ***
+
+
+# New fund options for large cap growth
+funds = ['FBGRX','FCNTX','FDSVX','FOCPX','FTRNX','LGILX','NASDX',
+         'TRBCX','PRGFX','PRWAX']
+startN = 102
+for n, f in enumerate(funds):
+    n += startN
+    portfolio = [(f, 0.55), ('FPNTX', 0.15), ('BTTTX', 0.3)]
+    testPortfilo(portfolio,(2003,1,1),(2013,10,10) ,365*7,
+                 outputFilename=r'data\homeFund3_%d.dat' % n,
+                 numSim=5000)    
+
+plotResults(['homeFund3'],199, [78,101,104,108,111])
+plotResults(['homeFund3'],199, [78,101,108])
+
+# 108 is the winner
+[('NASDX', 0.55), ('FPNTX', 0.15), ('BTTTX', 0.3)]
+
+A Nasdax index fund wins....
+
+
+
 """
