@@ -1,7 +1,7 @@
 """
 Parsing functions for CSV files from various institutions
 """
-
+import pandas
 
 
 
@@ -31,7 +31,8 @@ def parseFidelity(csvFile,db):
         }
     symbolMap = {
         'FID GROWTH CO K':          'FGCKX',
-        'FID FRDM INDX 2055 W':     'FDEWX'
+        'FID FRDM INDX 2055 W':     'FDEWX',
+        'FID FRDM INDX 2055':       'FDEWX'
         }
     
     
@@ -97,12 +98,19 @@ def parseSchwab(csvFile,db):
     # Define mapping between fidelity terms and my terms
     actionMap = {
         'Buy':     'Buy',
-        'Sell':    'Sell'
+        'Sell':    'Sell',
+        'Reinvest Shares':  'Reinv Div',
+        'Reinvest Dividend': 'Reinv Div',
+        'MoneyLink Transfer': '',
+        'Bank Interest': '',
+        'Long Term Cap Gain Reinvest': '',
+        'Short Term Cap Gain Reinvest': '',
+        'Reverse Split':    '',
     }
     
     f = open(csvFile)
     f.next()
-    if f.next() != '"Date","Action","Quantity","Symbol","Description","Price","Amount","Fees & Comm"\n':
+    if f.next() != '"Date","Action","Symbol","Description","Quantity","Price","Fees & Comm","Amount",\n':
         raise parseException("Cannot read file.  Schwab appears to have changed their format.")
     for l in f:
         print "Parsing line ", l.strip()[0:45] + "..."
@@ -114,22 +122,30 @@ def parseSchwab(csvFile,db):
             continue
         
         try:
-            action = actionMap[d[1]]
+            action = actionMap[d[1].strip()]
         except KeyError:
             raise parseException('Action "%s" not in actionMap for Schwab files' % d[1])
         
-        if d[4].find('REINVEST DIVIDEND') != -1:
-            action = "Reinv Div"
+        if action == '':
+            print "   > Skipping this transaction.  No action take"
+            continue
+        if d[1].strip() == 'Reinvest Dividend':
+            print "   > Skipping this transaction.  Should have a 'reinvest shares somewhere'"
+            continue            
         
-        if d[7].strip() == '':
-            d[7] = 0
+        
+        if d[6].strip() == '':
+            d[6] = 0
+            
+        if action == 'Sell':
+            d[4] = '-' + d[4]
         
         do = insertTransaction(db=db, date=d[0], 
                           action=action, 
-                          symbol=d[3], 
-                          qty=float(d[2]), 
+                          symbol=d[2], 
+                          qty=float(d[4]), 
                           price=float(d[5]), 
-                          fees=float(d[7]), 
+                          fees=float(d[6]), 
                           sourceLine=l,
                           account='Schwab')    
         if do != True:
@@ -186,7 +202,8 @@ def parseVanguard(csvFile,db):
         'Buy':          'Buy',
         'Sell':         'Sell',
         'Distribution': 'Reinv Div',
-        'Dividend':     'Reinv Div'
+        'Dividend':     '',
+        'Reinvested dividend':  'Reinv Div',
         }
     symbolMap = {
         'Prime Money Mkt Fund':         'VMMXX',
@@ -200,7 +217,8 @@ def parseVanguard(csvFile,db):
     
     # Advance to first data block
     for l in f:
-        if l == "Account Number, Trade Date, Process Date, Transaction Type, Transaction Description, Investment Name, Share Price, Shares, Gross Amount, Net Amount,\n":
+        if l == 'Account Number,Trade Date,Process Date,Transaction Type,Transaction Description,Investment Name,Share Price,Shares,Gross Amount,Net Amount,\n':
+            print 'found first block'            
             break
         
     for l in f:
@@ -258,6 +276,9 @@ def parseVanguard(csvFile,db):
             print "   > Skipping line.  Sweep transaction."
             continue
         if d[4] == 'DIVIDEND PAYMENT':
+            print "   > Skipping line.  Dividend payment."
+            continue
+        if d[3] == 'Dividend':
             print "   > Skipping line.  Dividend payment."
             continue
     
@@ -393,14 +414,15 @@ def insertTransaction(db, date, action, symbol, qty, price, fees, sourceLine, ac
         (date, action, symbol, qty, price, fees, sourceLine, account))
     return True
     
-    
+
+
     
     
 if __name__ == '__main__':
     import sqlite3
     db = sqlite3.connect("transactions.db")
-    parseFidelity("sensitive_data/fidelity.csv",db)
-    parseSchwab("sensitive_data/schwabMod.csv",db)
+    #parseFidelity("sensitive_data/fidelity.csv",db)
+    #parseSchwab("sensitive_data/schwab.csv",db)
     parseVanguard("sensitive_data/vanguard.csv", db)
     
     

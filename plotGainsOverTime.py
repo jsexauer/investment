@@ -6,8 +6,21 @@ import operator
 db = sqlite3.connect("transactions.db")
 cur = db.cursor()
 
-# skipping  'VMMXX'
-symbols = ['CLSPX', 'FDEWX', 'FGCKX', 'FRSPX', 'TWCUX', 'VISGX', 'VMGIX', 'VOT', 'VPL']
+# skipping  'VMMXX', 'CLS1Z'
+symbols = """
+BTTTX
+CLSPX
+FDEWX
+FGCKX
+FPNTX
+FRSPX
+NASDX
+TWCUX
+VISGX
+VMGIX
+VOT
+VPL
+""".split('\n')[1:-1]
 plt.close('all')
 
 def plotVsCostBasis(gains):
