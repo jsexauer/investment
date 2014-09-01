@@ -285,6 +285,85 @@ def parseVanguard(csvFile,db):
             print "   > " + do
     
     db.commit()
+
+
+
+from mint_api import Mint
+from pprint import pprint
+def parseMint(accounts_map, db):
+    raise NotImplementedError('Unable to pair transactions :(')
+    mint = Mint('genericcarbonlifeform@gmail.com', raw_input('Mint Password:'))
+    mint.login()
+    
+    # Define mapping between mint terms and my terms
+    account_map = {
+        'House Account':        'Schwab',
+        'PJM INTERCONNECTION':  'PJM 401k',
+        'Jason M. Sexauer Roth IRA Brokerage Account': 'IRA-Trading',
+        'Vanguard Account':     'IRA',
+    }
+    def _process_symbol(t):
+        if t['symbol'] != '':
+            return t['symbol']
+        else:
+            try:
+                ans = {'FID GROWTH CO K':           'FGCKX',
+                       'FID FRDM INDX 2055 W':      'FDEWX',
+                       'FID FRDM INDX 2055':        'FDEWX',
+                       'NUVEEN PA MUNI BOND CL A':  'FPNTX',
+                       'SHELTON NASDAQ 100 INDEX FD':'NASDX',
+                       'Mid-Cap Growth Index Inv - Dividend': 'VMGIX',
+                       'Small-Cap Growth Idx Inv - Dividend': 'VISGX',
+                       'BANK INT 011614-021514': '',
+                       'Tfr AMERICAN HERITAGE, JASON SEXAUER': '',
+                       'AMERICAN CENTURY ZERO COUPON 2020 INV': 'BTTTX',
+                       'COLUMBIA MID CAP GROWTH CL Z':  'CLSPX',
+                       'AMERICAN CENTURY ULTRA FD INV CL':  'TWCUX',
+                       
+                       }[t['omerchant']]
+            except KeyError:
+                pprint(t)
+                raise Exception('No Symbol: %s'%t['omerchant'])
+            return ans
+
+    trans = []
+    expecting_reinvest = []
+    for t in mint.get_transactions(investment=True):
+        for k in ('odate','category','symbol','omerchant','shares','amount','txnType','isBuy','isSell','isDebit'):
+            print "  {0:<20}: {1}".format(k, t[k])
+        print '-'*15
+        
+        qty = float(t['shares'])
+        amount = float(t['amount'].replace('$','').replace(',',''))
+        symbol = _process_symbol(t)
+        
+        if qty == 0:
+            # Hopefully a "Buy" transaction comes along which matches this
+            # transaction.
+            expecting_reinvest.append((symbol, amount))
+        else:
+            trans.append({
+                'date':     pandas.Timestamp(t['date']),
+                'action':   'Sell' if t['isDebit'] else 'Buy',
+                'symbol':   symbol,
+                'qty':      qty,
+                'price':    amount/qty,
+                'fees':     0,
+                'sourceLine':str(t),
+                'account':  account_map[t['account']]
+            
+            })
+
+    for e in expecting_reinvest:
+        # Make sure we can find a transaction
+        d = filter(lambda x:x['symbol']==e[0] and x['qty']==e[1], trans)
+        if len(d) == 0:
+            raise Exception("Expected to find reinvest for %s,%s" % e)
+        if len(d) > 1:
+            raise Exception("Multiple canidates found for %,%ss" % e)
+        d[0]['action'] = 'Reinv Div'
+
+    pprint(t)
     
     
     
