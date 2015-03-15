@@ -43,6 +43,7 @@ def grabSymbol(symbol, sDate, eDate):
     return df
 
 class calcInflation:
+    """Inflaction calculation based on look up table"""
     def __init__(self, loadLUT=True):
         self.LUT = {}
         if loadLUT:

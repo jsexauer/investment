@@ -144,10 +144,9 @@ def plotResults(strategiesToPlot, numTests, which=None):
     plt.title('All Strategies')
     plt.show()
     
-def testStrategies(strategies, numTests):
-    """Main Function"""
-    sDate = (2003,1,1)
-    eDate = (2013,10,10)   
+def testStrategies(strategies, numTests, 
+                   sDate = (2003,1,1), eDate = (2013,10,10)):
+    """Main Function""" 
     maxDaysHeld = 365*7
     
     # Make sure our allocations are well formed
@@ -183,7 +182,7 @@ if __name__ == '__main__':
     numTests = 5
     strategies = {k:ALLOCATION_STRATEGY[k] for k in 
                     ['homeFund','homeFund2','homeFund3','homeFund4']}
-    #testStrategies(strategies, numTests)
+    testStrategies(strategies, numTests)
     
     # Plot all of them together
     strategiesToPlot = ALLOCATION_STRATEGY.keys()

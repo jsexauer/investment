@@ -88,8 +88,6 @@ plotVsCostBasis(gains)
 
 
 # Figure out principle and gains by stock
-
-
 perUnit = True
 if perUnit:
     for s in symbols:
